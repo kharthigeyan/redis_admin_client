@@ -2,7 +2,7 @@
 name = "redis_admin_client"
 version = "0.1.0"
 description = "High level redis client"
-authors = ["Kharthigeyan Satyamurthy <ksatyamurthy@groupon.com>"]
+authors = ["Kharthigeyan Satyamurthy <kharthigeyan@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
