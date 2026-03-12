@@ -6,7 +6,7 @@ import socket
 import requests
 import json
 import ipcalc
-from datetime import datetime
+from datetime import datetime, timezone
 
 import ray
 import plotly.express as px
@@ -70,7 +70,9 @@ class RedisDB:
         self.host = host
         self.port = port
         self.conn = r.Redis(host, port, socket_timeout=SOCKET_TIMEOUT, decode_responses=True)
-        self.redis_mode = self.conn.info()['redis_mode']
+        # Valkey reports 'server_mode'; Redis reports 'redis_mode'; fall back gracefully for either.
+        info = self.conn.info()
+        self.redis_mode = info.get('redis_mode') or info.get('server_mode', 'standalone')
         if self.redis_mode == 'cluster':
             primary_nodes = []
             replica_nodes = []
@@ -199,7 +201,7 @@ class RedisDB:
             slowlog_df['duration_ms'] = slowlog_df['duration'].astype('int') / 1000
             # start_time is a Unix epoch integer; convert to a human-readable UTC string for readability.
             slowlog_df['start_time'] = slowlog_df['start_time'].astype('int').apply(
-                lambda x: datetime.utcfromtimestamp(x).strftime('%Y-%m-%d %H:%M:%S')
+                lambda x: datetime.fromtimestamp(x, tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
             )
             slowlog_df.drop('duration', axis=1, inplace=True)
             return slowlog_df[['node', 'id', 'start_time', 'duration_ms', 'command']]
@@ -209,7 +211,7 @@ class RedisDB:
             df['duration_ms'] = df['duration'].astype('int') / 1000
             df.drop('duration', axis=1, inplace=True)
             df['start_time'] = df['start_time'].astype('int').apply(
-                lambda x: datetime.utcfromtimestamp(x).strftime('%Y-%m-%d %H:%M:%S')
+                lambda x: datetime.fromtimestamp(x, tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
             )
             return df
 
